@@ -12,6 +12,7 @@ interface ChartContainerProps {
   ema20Enabled: boolean;
   ema50Enabled: boolean;
   livePrice: number | null;
+  timeframe: string;
 }
 
 export const ChartContainer = memo(function ChartContainer({
@@ -20,6 +21,7 @@ export const ChartContainer = memo(function ChartContainer({
   ema20Enabled,
   ema50Enabled,
   livePrice,
+  timeframe,
 }: ChartContainerProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -30,6 +32,23 @@ export const ChartContainer = memo(function ChartContainer({
   const ema50SeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const mountedRef = useRef(true);
   const lastLivePriceRef = useRef<number>(0);
+  const localCandlesRef = useRef<CandleData[]>([]);
+
+  function getTimeframeInSeconds(tf: string): number {
+    const map: Record<string, number> = {
+      '1m': 60,
+      '5m': 300,
+      '15m': 900,
+      '1h': 3600,
+      '4h': 14400,
+      '1d': 86400,
+    };
+    return map[tf] || 3600;
+  }
+
+  function getAlignedTime(currentTime: number, intervalSeconds: number): number {
+    return Math.floor(currentTime / intervalSeconds) * intervalSeconds;
+  }
 
   const chartData = useMemo(() => {
     if (chartType === 'heikin-ashi') {
@@ -174,6 +193,7 @@ export const ChartContainer = memo(function ChartContainer({
 
     volumeSeriesRef.current.setData(volumeData);
     lastLivePriceRef.current = 0;
+    localCandlesRef.current = [...candles];
   }, [chartData, chartType, volumeData]);
 
   useEffect(() => {
@@ -193,19 +213,58 @@ export const ChartContainer = memo(function ChartContainer({
     if (livePrice === lastLivePriceRef.current) return;
     lastLivePriceRef.current = livePrice;
 
-    const lastCandle = candles[candles.length - 1];
-    candlestickSeriesRef.current.update({
-      time: lastCandle.time as Time,
-      open: lastCandle.open,
-      high: Math.max(lastCandle.high, livePrice),
-      low: Math.min(lastCandle.low, livePrice),
-      close: livePrice,
-    });
+    const localCandles = localCandlesRef.current;
+    if (localCandles.length === 0) return;
 
-    if (lineSeriesRef.current && lineSeriesRef.current.options().visible) {
-      lineSeriesRef.current.update({ time: lastCandle.time as Time, value: livePrice });
+    const lastCandle = localCandles[localCandles.length - 1];
+    const currentTime = Math.floor(Date.now() / 1000);
+    const intervalSeconds = getTimeframeInSeconds(timeframe);
+    const alignedTime = getAlignedTime(currentTime, intervalSeconds);
+    const lastCandleTime = lastCandle.time;
+
+    if (alignedTime > lastCandleTime) {
+      const newCandle: CandleData = {
+        time: alignedTime,
+        open: livePrice,
+        high: livePrice,
+        low: livePrice,
+        close: livePrice,
+      };
+      localCandlesRef.current = [...localCandles, newCandle];
+
+      candlestickSeriesRef.current.update({
+        time: newCandle.time as Time,
+        open: newCandle.open,
+        high: newCandle.high,
+        low: newCandle.low,
+        close: newCandle.close,
+      });
+
+      if (lineSeriesRef.current && lineSeriesRef.current.options().visible) {
+        lineSeriesRef.current.update({ time: newCandle.time as Time, value: livePrice });
+      }
+    } else {
+      const updatedCandle: CandleData = {
+        ...lastCandle,
+        high: Math.max(lastCandle.high, livePrice),
+        low: Math.min(lastCandle.low, livePrice),
+        close: livePrice,
+      };
+      localCandlesRef.current = [...localCandles.slice(0, -1), updatedCandle];
+
+      candlestickSeriesRef.current.update({
+        time: lastCandle.time as Time,
+        open: lastCandle.open,
+        high: updatedCandle.high,
+        low: updatedCandle.low,
+        close: livePrice,
+      });
+
+      if (lineSeriesRef.current && lineSeriesRef.current.options().visible) {
+        lineSeriesRef.current.update({ time: lastCandle.time as Time, value: livePrice });
+      }
     }
-  }, [livePrice, candles]);
+  }, [livePrice, candles, timeframe]);
 
   return (
     <div ref={chartContainerRef} className="w-full h-[400px] rounded-lg overflow-hidden" />

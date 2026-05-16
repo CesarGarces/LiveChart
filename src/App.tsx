@@ -72,6 +72,7 @@ function App() {
               ema20Enabled={ema20Enabled}
               ema50Enabled={ema50Enabled}
               livePrice={price}
+              timeframe={timeframe}
             />
           )}
         </div>
