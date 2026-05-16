@@ -1,4 +1,4 @@
-import { useEffect, useRef, useMemo, memo, useCallback } from 'react';
+import { useEffect, useRef, useMemo, memo } from 'react';
 import { createChart, CandlestickSeries, LineSeries, HistogramSeries } from 'lightweight-charts';
 import type { IChartApi, ISeriesApi, CandlestickData, LineData, HistogramData, Time } from 'lightweight-charts';
 import { calculateEMA, calculateHeikinAshi } from '../utils/ohlcGenerator';
@@ -29,6 +29,7 @@ export const ChartContainer = memo(function ChartContainer({
   const ema20SeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const ema50SeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const mountedRef = useRef(true);
+  const lastLivePriceRef = useRef<number>(0);
 
   const chartData = useMemo(() => {
     if (chartType === 'heikin-ashi') {
@@ -172,6 +173,7 @@ export const ChartContainer = memo(function ChartContainer({
     }
 
     volumeSeriesRef.current.setData(volumeData);
+    lastLivePriceRef.current = 0;
   }, [chartData, chartType, volumeData]);
 
   useEffect(() => {
@@ -186,45 +188,24 @@ export const ChartContainer = memo(function ChartContainer({
     ema50SeriesRef.current.applyOptions({ visible: ema50Enabled });
   }, [ema50Data, ema50Enabled]);
 
-  const updateChart = useCallback((price: number) => {
-    if (!candlestickSeriesRef.current || candles.length === 0 || !mountedRef.current) return;
+  useEffect(() => {
+    if (!livePrice || !candlestickSeriesRef.current || candles.length === 0 || !mountedRef.current) return;
+    if (livePrice === lastLivePriceRef.current) return;
+    lastLivePriceRef.current = livePrice;
 
     const lastCandle = candles[candles.length - 1];
-    const currentTime = Math.floor(Date.now() / 1000);
-    const lastTime = lastCandle.time;
+    candlestickSeriesRef.current.update({
+      time: lastCandle.time as Time,
+      open: lastCandle.open,
+      high: Math.max(lastCandle.high, livePrice),
+      low: Math.min(lastCandle.low, livePrice),
+      close: livePrice,
+    });
 
-    if (currentTime > lastTime + 60) {
-      const newCandle = {
-        time: currentTime as Time,
-        open: price,
-        high: price,
-        low: price,
-        close: price,
-      };
-      candlestickSeriesRef.current.update(newCandle);
-      if (lineSeriesRef.current) {
-        lineSeriesRef.current.update({ time: currentTime as Time, value: price });
-      }
-    } else {
-      const updated = {
-        time: lastTime as Time,
-        open: lastCandle.open,
-        high: Math.max(lastCandle.high, price),
-        low: Math.min(lastCandle.low, price),
-        close: price,
-      };
-      candlestickSeriesRef.current.update(updated);
-      if (lineSeriesRef.current) {
-        lineSeriesRef.current.update({ time: lastTime as Time, value: price });
-      }
+    if (lineSeriesRef.current && lineSeriesRef.current.options().visible) {
+      lineSeriesRef.current.update({ time: lastCandle.time as Time, value: livePrice });
     }
-  }, [candles]);
-
-  useEffect(() => {
-    if (livePrice && mountedRef.current) {
-      updateChart(livePrice);
-    }
-  }, [livePrice, updateChart]);
+  }, [livePrice, candles]);
 
   return (
     <div ref={chartContainerRef} className="w-full h-[400px] rounded-lg overflow-hidden" />
