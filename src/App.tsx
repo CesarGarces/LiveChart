@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { CryptoSelector } from './components/CryptoSelector';
 import { PriceHeader } from './components/PriceHeader';
 import { ChartTypeTabs } from './components/ChartTypeTabs';
@@ -7,7 +7,6 @@ import { IndicatorToggle } from './components/IndicatorToggle';
 import { ChartContainer } from './components/ChartContainer';
 import { useCryptoPrice } from './hooks/useCryptoPrice';
 import { useHistoricalData } from './hooks/useHistoricalData';
-import { fetchAsset } from './services/coincapApi';
 
 type ChartType = 'candlestick' | 'line' | 'heikin-ashi';
 
@@ -17,33 +16,9 @@ function App() {
   const [chartType, setChartType] = useState<ChartType>('candlestick');
   const [ema20Enabled, setEma20Enabled] = useState(true);
   const [ema50Enabled, setEma50Enabled] = useState(true);
-  
-  const [assetData, setAssetData] = useState<{
-    changePercent24Hr: number;
-    high24h: number;
-    low24h: number;
-    volumeUsd24Hr: number;
-  } | null>(null);
 
-  const { price, isLoading: priceLoading } = useCryptoPrice(symbol);
+  const { price, tickerData, isLoading: priceLoading } = useCryptoPrice(symbol);
   const { candles, isLoading: candlesLoading, error } = useHistoricalData(symbol, timeframe);
-
-  useEffect(() => {
-    async function loadAsset() {
-      try {
-        const asset = await fetchAsset(symbol);
-        setAssetData({
-          changePercent24Hr: parseFloat(asset.priceChangePercent),
-          high24h: parseFloat(asset.highPrice),
-          low24h: parseFloat(asset.lowPrice),
-          volumeUsd24Hr: parseFloat(asset.volume),
-        });
-      } catch (e) {
-        console.error('Failed to load asset:', e);
-      }
-    }
-    loadAsset();
-  }, [symbol]);
 
   const isLoading = priceLoading || candlesLoading;
 
@@ -56,10 +31,10 @@ function App() {
 
         <PriceHeader
           price={price}
-          change24h={assetData?.changePercent24Hr || 0}
-          high24h={assetData?.high24h || 0}
-          low24h={assetData?.low24h || 0}
-          volume24h={assetData?.volumeUsd24Hr || 0}
+          change24h={tickerData?.priceChangePercent || 0}
+          high24h={tickerData?.high24h || 0}
+          low24h={tickerData?.low24h || 0}
+          volume24h={tickerData?.volume24h || 0}
           isLive={!priceLoading && price !== null}
           symbol={symbol}
           isLoading={priceLoading}

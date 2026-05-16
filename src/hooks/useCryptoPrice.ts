@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
-import { wsService } from '../services/sseService';
+import { wsService, type TickerData } from '../services/sseService';
 
 interface UseCryptoPriceResult {
   price: number | null;
+  tickerData: TickerData | null;
   isLoading: boolean;
   error: string | null;
 }
 
 export function useCryptoPrice(symbol: string | null): UseCryptoPriceResult {
-  const [price, setPrice] = useState<number | null>(null);
+  const [tickerData, setTickerData] = useState<TickerData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!symbol) {
-      setPrice(null);
+      setTickerData(null);
       setIsLoading(false);
       return;
     }
@@ -22,8 +23,8 @@ export function useCryptoPrice(symbol: string | null): UseCryptoPriceResult {
     setIsLoading(true);
     setError(null);
 
-    wsService.connect(symbol, (newPrice) => {
-      setPrice(newPrice);
+    wsService.connect(symbol, (data) => {
+      setTickerData(data);
       setIsLoading(false);
     });
 
@@ -32,5 +33,10 @@ export function useCryptoPrice(symbol: string | null): UseCryptoPriceResult {
     };
   }, [symbol]);
 
-  return { price, isLoading, error };
+  return { 
+    price: tickerData?.price ?? null, 
+    tickerData,
+    isLoading, 
+    error 
+  };
 }

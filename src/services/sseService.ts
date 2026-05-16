@@ -1,17 +1,25 @@
 import { CRYPTO_MAP } from './coincapApi';
 
-type PriceCallback = (price: number) => void;
+export interface TickerData {
+  price: number;
+  priceChangePercent: number;
+  high24h: number;
+  low24h: number;
+  volume24h: number;
+}
+
+type TickerCallback = (data: TickerData) => void;
 
 class WSService {
   private ws: WebSocket | null = null;
   private currentSymbol: string | null = null;
-  private callback: PriceCallback | null = null;
+  private callback: TickerCallback | null = null;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  connect(symbol: string, onPrice: PriceCallback) {
+  connect(symbol: string, onTicker: TickerCallback) {
     this.disconnect();
     this.currentSymbol = symbol;
-    this.callback = onPrice;
+    this.callback = onTicker;
 
     const pair = CRYPTO_MAP[symbol];
     if (!pair) return;
@@ -25,7 +33,13 @@ class WSService {
       try {
         const data = JSON.parse(event.data);
         if (data.c) {
-          this.callback?.(parseFloat(data.c));
+          this.callback?.({
+            price: parseFloat(data.c),
+            priceChangePercent: parseFloat(data.P),
+            high24h: parseFloat(data.h),
+            low24h: parseFloat(data.l),
+            volume24h: parseFloat(data.v) * parseFloat(data.c),
+          });
         }
       } catch (e) {
         console.error('Error parsing WS message:', e);
