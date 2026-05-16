@@ -41,7 +41,7 @@ export async function fetchHistory(
   if (!pair) throw new Error(`Unknown symbol: ${symbol}`);
 
   const interval = mapTimeframe(timeframe);
-  const limit = 100;
+  const limit = getLimitForDays(30, timeframe);
 
   const response = await fetch(
     `${BASE_URL}/klines?symbol=${pair}&interval=${interval}&limit=${limit}`
@@ -69,4 +69,16 @@ function mapTimeframe(tf: string): string {
     '1d': '1d',
   };
   return map[tf] || '1h';
+}
+
+function getLimitForDays(days: number, tf: string): number {
+  const candlesPerDay: Record<string, number> = {
+    '1m': 1440,
+    '5m': 288,
+    '15m': 96,
+    '1h': 24,
+    '4h': 6,
+    '1d': 1,
+  };
+  return Math.min(candlesPerDay[tf] * days, 500);
 }
