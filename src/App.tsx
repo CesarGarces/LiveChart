@@ -37,7 +37,7 @@ function App() {
     if (price !== null) {
       document.title = `${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ${symbol}`;
     } else {
-      document.title = 'Crypto Watch';
+      document.title = 'LiveChart';
     }
   }, [price, symbol]);
 
@@ -54,7 +54,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-950 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-white mb-6">Crypto Watch</h1>
+        <h1 className="text-3xl font-bold text-white mb-6">LiveChart</h1>
 
         <div className="flex flex-col lg:flex-row gap-6">
           <div className="flex-1">
