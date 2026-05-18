@@ -1,6 +1,5 @@
-import { useCallback } from 'react';
-import { CRYPTO_MAP } from '../services/coincapApi';
 import { useCryptoPrices } from '../hooks/useCryptoPrices';
+import { type BinancePriceInfo } from '../services/priceService';
 
 interface FavoritesListProps {
   favorites: string[];
@@ -23,15 +22,8 @@ function formatPrice(price: number): string {
 }
 
 export function FavoritesList({ favorites, selectedSymbol, onSelect, onToggleFavorite }: FavoritesListProps) {
-  const validFavorites = favorites.filter((s) => CRYPTO_MAP[s]);
+  const validFavorites = favorites.filter((s) => s.endsWith('USDT'));
   const prices = useCryptoPrices(validFavorites);
-
-  const handleToggle = useCallback(
-    (symbol: string) => {
-      onToggleFavorite(symbol);
-    },
-    [onToggleFavorite]
-  );
 
   if (validFavorites.length === 0) {
     return (
@@ -51,7 +43,7 @@ export function FavoritesList({ favorites, selectedSymbol, onSelect, onToggleFav
       </h3>
       <div className="max-h-96 overflow-y-auto">
         {validFavorites.map((symbol) => {
-          const priceData = prices[symbol];
+          const priceData = prices[symbol] as BinancePriceInfo | undefined;
           const isSelected = selectedSymbol === symbol;
 
           return (
@@ -65,7 +57,7 @@ export function FavoritesList({ favorites, selectedSymbol, onSelect, onToggleFav
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleToggle(symbol);
+                  onToggleFavorite(symbol);
                 }}
                 className="flex-shrink-0 focus:outline-none"
               >

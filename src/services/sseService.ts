@@ -1,5 +1,3 @@
-import { CRYPTO_MAP } from './coincapApi';
-
 export interface TickerData {
   price: number;
   priceChangePercent: number;
@@ -21,10 +19,7 @@ class WSService {
     this.currentSymbol = symbol;
     this.callback = onTicker;
 
-    const pair = CRYPTO_MAP[symbol];
-    if (!pair) return;
-
-    const streamName = `${pair.toLowerCase()}@ticker`;
+    const streamName = `${symbol.toLowerCase()}@ticker`;
     const wsUrl = `wss://stream.binance.com:9443/ws/${streamName}`;
 
     this.ws = new WebSocket(wsUrl);

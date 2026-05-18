@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { CRYPTO_MAP, CRYPTO_INFO } from '../services/coincapApi';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useBinanceSymbols } from '../hooks/useBinanceSymbols';
 import { useCryptoPrices } from '../hooks/useCryptoPrices';
+import { type BinancePriceInfo } from '../services/priceService';
 
 interface CryptoSearchBarProps {
   value: string;
@@ -8,8 +9,6 @@ interface CryptoSearchBarProps {
   onToggleFavorite: (symbol: string) => void;
   favorites: string[];
 }
-
-const ALL_SYMBOLS = Object.keys(CRYPTO_MAP);
 
 function formatPrice(price: number): string {
   if (price >= 1000) {
@@ -29,7 +28,23 @@ export function CryptoSearchBar({ value, onChange, onToggleFavorite, favorites }
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const prices = useCryptoPrices(ALL_SYMBOLS.slice(0, 20));
+  const { symbols, loading } = useBinanceSymbols();
+
+  const symbolsToShow = useMemo(() => {
+    if (search) {
+      const searchLower = search.toLowerCase();
+      return symbols
+        .filter((s) => s.symbol.toLowerCase().includes(searchLower))
+        .slice(0, 50);
+    }
+    return symbols.slice(0, 50);
+  }, [symbols, search]);
+
+  const symbolsToWatch = useMemo(() => {
+    return symbolsToShow.map((s) => s.symbol);
+  }, [symbolsToShow]);
+
+  const prices = useCryptoPrices(symbolsToWatch);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -40,17 +55,6 @@ export function CryptoSearchBar({ value, onChange, onToggleFavorite, favorites }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const filteredSymbols = ALL_SYMBOLS.filter((symbol) => {
-    const info = CRYPTO_INFO[symbol];
-    const searchLower = search.toLowerCase();
-    return (
-      symbol.toLowerCase().includes(searchLower) ||
-      info?.name.toLowerCase().includes(searchLower)
-    );
-  });
-
-  const displayList = search ? filteredSymbols : ALL_SYMBOLS.slice(0, 20);
 
   const handleSelect = (symbol: string) => {
     onChange(symbol);
@@ -89,12 +93,14 @@ export function CryptoSearchBar({ value, onChange, onToggleFavorite, favorites }
 
       {isOpen && (
         <div className="absolute z-50 w-full mt-2 bg-gray-900 border border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto">
-          {displayList.length === 0 ? (
+          {loading ? (
+            <div className="px-4 py-3 text-gray-500 text-center">Cargando...</div>
+          ) : symbolsToShow.length === 0 ? (
             <div className="px-4 py-3 text-gray-500 text-center">No se encontraron resultados</div>
           ) : (
-            displayList.map((symbol) => {
-              const info = CRYPTO_INFO[symbol];
-              const priceData = prices[symbol];
+            symbolsToShow.map((binanceSymbol) => {
+              const symbol = binanceSymbol.symbol;
+              const priceData = prices[symbol] as BinancePriceInfo | undefined;
               const isFav = favorites.includes(symbol);
               const isSelected = value === symbol;
 
@@ -131,9 +137,6 @@ export function CryptoSearchBar({ value, onChange, onToggleFavorite, favorites }
 
                   <div className="flex-1 text-left">
                     <div className="text-white font-medium">{symbol}</div>
-                    {info?.name && (
-                      <div className="text-gray-500 text-sm">{info.name}</div>
-                    )}
                   </div>
 
                   <div className="text-right flex-shrink-0">

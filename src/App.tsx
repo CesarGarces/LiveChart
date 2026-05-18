@@ -21,7 +21,7 @@ function getFavorites(): string[] {
 }
 
 function App() {
-  const [symbol, setSymbol] = useState<string>('BTC/USDT');
+  const [symbol, setSymbol] = useState<string>('BTCUSDT');
   const [timeframe, setTimeframe] = useState<string>('1h');
   const [chartType, setChartType] = useState<ChartType>('candlestick');
   const [ema20Enabled, setEma20Enabled] = useState(true);

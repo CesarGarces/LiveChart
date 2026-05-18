@@ -1,17 +1,15 @@
-import { CRYPTO_MAP } from '../services/coincapApi';
+type PriceCallback = (prices: Record<string, BinancePriceInfo>) => void;
 
-export interface CryptoPriceInfo {
+export interface BinancePriceInfo {
   symbol: string;
   price: number;
   priceChangePercent: number;
 }
 
-type PriceCallback = (prices: Record<string, CryptoPriceInfo>) => void;
-
 class PriceService {
   private ws: WebSocket | null = null;
   private subscribers: Map<string, { callback: PriceCallback; symbols: string[] }> = new Map();
-  private prices: Record<string, CryptoPriceInfo> = {};
+  private prices: Record<string, BinancePriceInfo> = {};
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   subscribe(id: string, symbols: string[], callback: PriceCallback): void {
@@ -54,7 +52,7 @@ class PriceService {
       this.ws = null;
     }
 
-    const validSymbols = symbols.filter((s) => CRYPTO_MAP[s]);
+    const validSymbols = symbols.filter((s) => s.endsWith('USDT'));
 
     if (validSymbols.length === 0) {
       this.notifySubscribers();
@@ -62,8 +60,7 @@ class PriceService {
     }
 
     const streamNames = validSymbols
-      .map((s) => CRYPTO_MAP[s])
-      .map((pair) => `${pair!.toLowerCase()}@miniTicker`)
+      .map((s) => `${s.toLowerCase()}@miniTicker`)
       .join('/');
 
     const wsUrl = `wss://stream.binance.com:9443/stream?streams=${streamNames}`;
@@ -74,20 +71,17 @@ class PriceService {
         const msg = JSON.parse(event.data);
         if (msg.data) {
           const data = msg.data;
-          const pair = data.s;
+          const symbol = data.s;
           const price = parseFloat(data.c);
           const open = parseFloat(data.o);
           const changePercent = open > 0 ? ((price - open) / open) * 100 : 0;
 
-          const symbol = Object.entries(CRYPTO_MAP).find(([, v]) => v === pair)?.[0];
-          if (symbol) {
-            this.prices[symbol] = {
-              symbol,
-              price,
-              priceChangePercent: changePercent,
-            };
-            this.notifySubscribers();
-          }
+          this.prices[symbol] = {
+            symbol,
+            price,
+            priceChangePercent: changePercent,
+          };
+          this.notifySubscribers();
         }
       } catch (e) {
         console.error('Error parsing WS message:', e);

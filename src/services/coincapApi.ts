@@ -17,59 +17,10 @@ export interface CandleData {
   close: number;
 }
 
-export const CRYPTO_MAP: Record<string, string> = {
-  'BTC/USDT': 'BTCUSDT',
-  'ETH/USDT': 'ETHUSDT',
-  'SOL/USDT': 'SOLUSDT',
-  'BNB/USDT': 'BNBUSDT',
-  'XRP/USDT': 'XRPUSDT',
-  'TON/USDT': 'TONUSDT',
-  'PEPE/USDT': 'PEPEUSDT',
-  'INJ/USDT': 'INJUSDT',
-  'PYR/USDT': 'PYRUSDT',
-  'ADA/USDT': 'ADAUSDT',
-  'DOGE/USDT': 'DOGEUSDT',
-  'AVAX/USDT': 'AVAXUSDT',
-  'DOT/USDT': 'DOTUSDT',
-  'LINK/USDT': 'LINKUSDT',
-  'MATIC/USDT': 'MATICUSDT',
-  'UNI/USDT': 'UNIUSDT',
-  'ATOM/USDT': 'ATOMUSDT',
-  'LTC/USDT': 'LTCUSDT',
-  'NEAR/USDT': 'NEARUSDT',
-  'APT/USDT': 'APTUSDT',
-};
-
-export const CRYPTO_INFO: Record<string, { name: string; icon: string }> = {
-  'BTC/USDT': { name: 'Bitcoin', icon: '₿' },
-  'ETH/USDT': { name: 'Ethereum', icon: 'Ξ' },
-  'SOL/USDT': { name: 'Solana', icon: '◎' },
-  'BNB/USDT': { name: 'BNB', icon: '◆' },
-  'XRP/USDT': { name: 'XRP', icon: '✕' },
-  'TON/USDT': { name: 'Toncoin', icon: '💎' },
-  'PEPE/USDT': { name: 'Pepe', icon: '🐸' },
-  'INJ/USDT': { name: 'Injective', icon: '⚡' },
-  'PYR/USDT': { name: 'Vulcan Forged', icon: '🔥' },
-  'ADA/USDT': { name: 'Cardano', icon: '₳' },
-  'DOGE/USDT': { name: 'Dogecoin', icon: 'Ð' },
-  'AVAX/USDT': { name: 'Avalanche', icon: '🔺' },
-  'DOT/USDT': { name: 'Polkadot', icon: '●' },
-  'LINK/USDT': { name: 'Chainlink', icon: '⬡' },
-  'MATIC/USDT': { name: 'Polygon', icon: '' },
-  'UNI/USDT': { name: 'Uniswap', icon: '🦄' },
-  'ATOM/USDT': { name: 'Cosmos', icon: '' },
-  'LTC/USDT': { name: 'Litecoin', icon: 'Ł' },
-  'NEAR/USDT': { name: 'NEAR Protocol', icon: 'Ⓝ' },
-  'APT/USDT': { name: 'Aptos', icon: '🅰' },
-};
-
 export async function fetchAsset(symbol: string): Promise<Asset> {
-  const pair = CRYPTO_MAP[symbol];
-  if (!pair) throw new Error(`Unknown symbol: ${symbol}`);
-
-  const response = await fetch(`${BASE_URL}/ticker/24hr?symbol=${pair}`);
+  const response = await fetch(`${BASE_URL}/ticker/24hr?symbol=${symbol}`);
   if (!response.ok) throw new Error(`Failed to fetch asset: ${response.statusText}`);
-  
+
   return response.json();
 }
 
@@ -77,18 +28,15 @@ export async function fetchHistory(
   symbol: string,
   timeframe: string
 ): Promise<CandleData[]> {
-  const pair = CRYPTO_MAP[symbol];
-  if (!pair) throw new Error(`Unknown symbol: ${symbol}`);
-
   const interval = mapTimeframe(timeframe);
   const limit = getLimitForDays(30, timeframe);
 
   const response = await fetch(
-    `${BASE_URL}/klines?symbol=${pair}&interval=${interval}&limit=${limit}`
+    `${BASE_URL}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
   );
-  
+
   if (!response.ok) throw new Error(`Failed to fetch history: ${response.statusText}`);
-  
+
   const data = await response.json();
   return data.map((k: (string | number)[]) => ({
     time: Math.floor((k[0] as number) / 1000),
