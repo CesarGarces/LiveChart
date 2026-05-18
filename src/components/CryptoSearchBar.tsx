@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useBinanceSymbols } from '../hooks/useBinanceSymbols';
 import { useCryptoPrices } from '../hooks/useCryptoPrices';
 import { type BinancePriceInfo } from '../services/priceService';
+import { formatSymbol } from '../utils/formatSymbol';
 
 interface CryptoSearchBarProps {
   value: string;
@@ -136,7 +137,7 @@ export function CryptoSearchBar({ value, onChange, onToggleFavorite, favorites }
                   </button>
 
                   <div className="flex-1 text-left">
-                    <div className="text-white font-medium">{symbol}</div>
+                    <div className="text-white font-medium">{formatSymbol(symbol)}</div>
                   </div>
 
                   <div className="text-right flex-shrink-0">

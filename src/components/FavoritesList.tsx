@@ -1,5 +1,6 @@
 import { useCryptoPrices } from '../hooks/useCryptoPrices';
 import { type BinancePriceInfo } from '../services/priceService';
+import { formatSymbol } from '../utils/formatSymbol';
 
 interface FavoritesListProps {
   favorites: string[];
@@ -67,7 +68,7 @@ export function FavoritesList({ favorites, selectedSymbol, onSelect, onToggleFav
               </button>
 
               <div className="flex-1 min-w-0">
-                <div className="text-white font-medium text-sm">{symbol}</div>
+                <div className="text-white font-medium text-sm">{formatSymbol(symbol)}</div>
               </div>
 
               <div className="text-right flex-shrink-0">

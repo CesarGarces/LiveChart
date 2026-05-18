@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { formatSymbol } from '../utils/formatSymbol';
 
 interface PriceHeaderProps {
   price: number | null;
@@ -35,7 +36,7 @@ export const PriceHeader = memo(function PriceHeader({
     <div className="bg-gray-900 rounded-xl p-4 mb-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-white">{symbol}</span>
+          <span className="text-2xl font-bold text-white">{formatSymbol(symbol)}</span>
           {isLive && (
             <span className="flex items-center gap-1.5 text-green-400 text-sm">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />

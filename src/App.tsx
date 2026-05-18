@@ -8,6 +8,7 @@ import { IndicatorToggle } from './components/IndicatorToggle';
 import { ChartContainer } from './components/ChartContainer';
 import { useCryptoPrice } from './hooks/useCryptoPrice';
 import { useHistoricalData } from './hooks/useHistoricalData';
+import { formatSymbol } from './utils/formatSymbol';
 
 type ChartType = 'candlestick' | 'line' | 'heikin-ashi';
 
@@ -35,7 +36,7 @@ function App() {
 
   useEffect(() => {
     if (price !== null) {
-      document.title = `${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ${symbol}`;
+      document.title = `${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ${formatSymbol(symbol)}`;
     } else {
       document.title = 'LiveChart';
     }
