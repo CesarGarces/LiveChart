@@ -1,6 +1,6 @@
 import { useEffect, useRef, useMemo, memo } from 'react';
-import { createChart, CandlestickSeries, LineSeries, HistogramSeries } from 'lightweight-charts';
-import type { IChartApi, ISeriesApi, CandlestickData, LineData, HistogramData, Time } from 'lightweight-charts';
+import { createChart, CandlestickSeries, LineSeries } from 'lightweight-charts';
+import type { IChartApi, ISeriesApi, CandlestickData, LineData, Time } from 'lightweight-charts';
 import { calculateEMA, calculateHeikinAshi } from '../utils/ohlcGenerator';
 import type { CandleData } from '../services/coincapApi';
 
@@ -27,7 +27,6 @@ export const ChartContainer = memo(function ChartContainer({
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const lineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
-  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const ema20SeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const ema50SeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const mountedRef = useRef(true);
@@ -69,14 +68,6 @@ export const ChartContainer = memo(function ChartContainer({
     return ema.map((value, i) => value !== null ? { time: chartData[i].time as Time, value } : null).filter(Boolean) as LineData[];
   }, [chartData]);
 
-  const volumeData = useMemo((): HistogramData[] => {
-    return candles.map(c => ({
-      time: c.time as Time,
-      value: Math.abs(c.close - c.open) * 1000000,
-      color: c.close >= c.open ? '#22c55e' : '#ef4444',
-    }));
-  }, [candles]);
-
   useEffect(() => {
     mountedRef.current = true;
     if (!chartContainerRef.current) return;
@@ -117,14 +108,6 @@ export const ChartContainer = memo(function ChartContainer({
       lineWidth: 2,
     });
 
-    const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: { type: 'volume' },
-      priceScaleId: '',
-    });
-    volumeSeries.priceScale().applyOptions({
-      scaleMargins: { top: 0.8, bottom: 0 },
-    });
-
     const ema20Series = chart.addSeries(LineSeries, {
       color: '#3b82f6',
       lineWidth: 1,
@@ -138,7 +121,6 @@ export const ChartContainer = memo(function ChartContainer({
     chartRef.current = chart;
     candlestickSeriesRef.current = candlestickSeries;
     lineSeriesRef.current = lineSeries;
-    volumeSeriesRef.current = volumeSeries;
     ema20SeriesRef.current = ema20Series;
     ema50SeriesRef.current = ema50Series;
 
@@ -162,7 +144,7 @@ export const ChartContainer = memo(function ChartContainer({
   }, []);
 
   useEffect(() => {
-    if (!candlestickSeriesRef.current || !lineSeriesRef.current || !volumeSeriesRef.current) return;
+    if (!candlestickSeriesRef.current || !lineSeriesRef.current) return;
 
     const candleData: CandlestickData[] = chartData.map(c => ({
       time: c.time as Time,
@@ -191,10 +173,9 @@ export const ChartContainer = memo(function ChartContainer({
       candlestickSeriesRef.current.setData(candleData);
     }
 
-    volumeSeriesRef.current.setData(volumeData);
     lastLivePriceRef.current = 0;
     localCandlesRef.current = [...candles];
-  }, [chartData, chartType, volumeData]);
+  }, [chartData, chartType]);
 
   useEffect(() => {
     if (!ema20SeriesRef.current) return;

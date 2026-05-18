@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CryptoSelector } from './components/CryptoSelector';
 import { PriceHeader } from './components/PriceHeader';
 import { ChartTypeTabs } from './components/ChartTypeTabs';
@@ -21,6 +21,14 @@ function App() {
   const { candles, isLoading: candlesLoading, error } = useHistoricalData(symbol, timeframe);
 
   const isLoading = priceLoading || candlesLoading;
+
+  useEffect(() => {
+    if (price !== null) {
+      document.title = `${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} - ${symbol}`;
+    } else {
+      document.title = 'Crypto Watch';
+    }
+  }, [price, symbol]);
 
   return (
     <div className="min-h-screen bg-gray-950 p-4 md:p-8">
